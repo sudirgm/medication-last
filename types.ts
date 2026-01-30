@@ -1,13 +1,17 @@
 
+export type Language = 
+  | 'en-US' | 'es-ES' | 'hi-IN' | 'ta-IN' | 'te-IN' | 'bn-IN' 
+  | 'ml-IN' | 'kn-IN' | 'mr-IN' | 'fr-FR' | 'de-DE' | 'zh-CN' | 'ja-JP';
+
 export interface Medication {
   id: string;
   name: string;
-  time: string; // Preferred time for the first dose/reminder
-  duration: number; // Number of days the course lasts
-  frequency: number; // Number of times per day
-  startDate: string; // ISO Date string when the medication started
-  logs: string[]; // Array of ISO Date strings for every time it was taken
-  lastTakenDate: string | null; // Keep for legacy/convenience (latest log)
+  time: string;
+  duration: number;
+  frequency: number;
+  startDate: string;
+  logs: string[];
+  lastTakenDate: string | null;
 }
 
 export type VoiceState = 'idle' | 'listening' | 'processing' | 'speaking';

@@ -1,38 +1,23 @@
 
 import React, { useState, useEffect } from 'react';
-import { Medication } from './types';
+import { Medication, Language } from './types';
 import { getMedications, saveMedications } from './services/medicationStore';
 import MedicationCard from './components/MedicationCard';
 import AddMedicationForm from './components/AddMedicationForm';
 import VoiceInterface from './components/VoiceInterface';
+import { translations } from './i18n';
 
 const App: React.FC = () => {
   const [medications, setMedications] = useState<Medication[]>([]);
+  const [lang, setLang] = useState<Language>('en-US');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMedication, setEditingMedication] = useState<Medication | null>(null);
-  const [greeting, setGreeting] = useState("Hello");
+  
+  const t = translations[lang] || translations['en-US'];
 
   useEffect(() => {
-    // Migration: ensure old data supports logs and frequency
     const saved = getMedications();
-    const migrated = saved.map(m => {
-      const logs = m.logs || (m.lastTakenDate ? [m.lastTakenDate] : []);
-      return {
-        ...m,
-        duration: m.duration || 30,
-        frequency: m.frequency || 1,
-        startDate: m.startDate || new Date().toISOString(),
-        logs: logs,
-        lastTakenDate: logs.length > 0 ? logs[logs.length - 1] : null
-      };
-    });
-    setMedications(migrated);
-    
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting("Good Morning");
-    else if (hour < 18) setGreeting("Good Afternoon");
-    else setGreeting("Good Evening");
-
+    setMedications(saved);
     if ('Notification' in window && Notification.permission !== 'granted') {
       Notification.requestPermission();
     }
@@ -42,14 +27,13 @@ const App: React.FC = () => {
     saveMedications(medications);
   }, [medications]);
 
-  // Daily summary stats
   const totalDosesToday = medications.reduce((acc, m) => acc + m.frequency, 0);
   const takenDosesToday = medications.reduce((acc, m) => {
     const today = new Date().toDateString();
     return acc + m.logs.filter(log => new Date(log).toDateString() === today).length;
   }, 0);
 
-  const progress = totalDosesToday > 0 ? (takenDosesToday / totalDosesToday) * 100 : 0;
+  const overallProgress = totalDosesToday > 0 ? (takenDosesToday / totalDosesToday) * 100 : 0;
 
   const handleAddMedication = (data: Omit<Medication, 'id' | 'logs' | 'lastTakenDate' | 'startDate'>) => {
     const newMed: Medication = {
@@ -64,9 +48,7 @@ const App: React.FC = () => {
   };
 
   const handleEditMedication = (id: string, updates: Partial<Medication>) => {
-    setMedications(prev => prev.map(m => 
-      m.id === id ? { ...m, ...updates } : m
-    ));
+    setMedications(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
     setEditingMedication(null);
     setShowAddForm(false);
   };
@@ -75,10 +57,9 @@ const App: React.FC = () => {
     setMedications(prev => prev.map(m => {
       if (m.id === id) {
         const newTimestamp = new Date().toISOString();
-        const updatedLogs = [...m.logs, newTimestamp];
         return { 
           ...m, 
-          logs: updatedLogs,
+          logs: [...m.logs, newTimestamp],
           lastTakenDate: newTimestamp 
         };
       }
@@ -87,102 +68,76 @@ const App: React.FC = () => {
   };
 
   const handleDeleteMedication = (id: string) => {
-    const confirmed = window.confirm("Are you sure you want to remove this medication?");
-    if (confirmed) {
+    if (window.confirm(t.deleteConfirm)) {
       setMedications(prev => prev.filter(m => m.id !== id));
     }
   };
 
-  const openEditForm = (med: Medication) => {
-    setEditingMedication(med);
-    setShowAddForm(true);
-  };
-
-  const closeForm = () => {
-    setShowAddForm(false);
-    setEditingMedication(null);
-  };
-
   return (
-    <div className="min-h-screen pb-64 relative">
-      {/* Dynamic Header */}
-      <header className="w-full bg-white/70 backdrop-blur-md border-b-4 border-slate-100 p-8 sticky top-0 z-30 shadow-sm flex flex-col gap-4">
-        <div className="flex justify-between items-center max-w-2xl mx-auto w-full">
-          <div>
-            <h1 className="text-4xl font-black text-slate-800 leading-none mb-1">
-              {greeting}
-            </h1>
-            <p className="text-xl font-bold text-slate-400">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-            </p>
-          </div>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-2xl font-black px-8 py-4 rounded-[1.5rem] shadow-xl shadow-blue-200 transition-all active:scale-95"
-          >
-            + New
-          </button>
-        </div>
-
-        {/* Daily Progress */}
-        {medications.length > 0 && (
-          <div className="max-w-2xl mx-auto w-full px-2">
-            <div className="flex justify-between mb-2 items-end">
-              <span className="text-lg font-black text-slate-600 uppercase tracking-tighter">Today's Goals</span>
-              <span className="text-lg font-black text-blue-600">{takenDosesToday} / {totalDosesToday} doses taken</span>
+    <div className="flex flex-col min-h-screen">
+      <header className="sticky top-0 z-30 glass-effect border-b border-slate-100 px-4 py-3 shadow-sm">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <h1 className="text-xl font-black text-slate-900 tracking-tight">MedRemind</h1>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <span className="text-lg font-black text-indigo-600 leading-none block">{Math.round(overallProgress)}%</span>
+              <span className="text-[10px] font-black text-slate-400 uppercase">{t.progress}</span>
             </div>
-            <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div className="w-8 h-8 rounded-full border-2 border-slate-100 relative overflow-hidden bg-slate-50">
               <div 
-                className="h-full bg-green-500 transition-all duration-1000 ease-out"
-                style={{ width: `${progress}%` }}
+                className="absolute bottom-0 left-0 right-0 bg-indigo-500 transition-all duration-700"
+                style={{ height: `${overallProgress}%` }}
               />
             </div>
           </div>
-        )}
+        </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="w-full max-w-2xl mx-auto px-6 mt-12">
-        {medications.length === 0 ? (
-          <div className="bg-white rounded-[3rem] p-16 text-center border-4 border-dashed border-slate-200 shadow-xl mt-12 animate-in zoom-in-95 duration-500">
-            <div className="text-9xl mb-8 animate-bounce">📦</div>
-            <p className="text-4xl font-black text-slate-800 mb-4">No Medicine Yet</p>
-            <p className="text-2xl font-bold text-slate-400 mb-12">Tap the Blue button at the top to add your first medicine!</p>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="px-12 py-6 bg-blue-600 text-white text-3xl font-black rounded-3xl shadow-2xl hover:bg-blue-700 transition-all active:scale-95"
-            >
-              Get Started
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <h2 className="text-4xl font-black text-slate-800 flex items-center gap-3">
-              Your List 📋
-            </h2>
-            <div className="grid grid-cols-1 gap-8">
-              {medications.sort((a, b) => a.time.localeCompare(b.time)).map(med => (
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-800">{t.schedule}</h2>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="bg-slate-900 hover:bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-black flex items-center gap-1.5 transition-all active:scale-95"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M12 4v16m8-8H4" /></svg>
+            {t.newMedicine}
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {medications.length === 0 ? (
+            <div className="col-span-full py-12 text-center bg-white/50 rounded-2xl border-2 border-dashed border-slate-100">
+              <p className="text-sm font-bold text-slate-400">{t.noMeds}</p>
+            </div>
+          ) : (
+            medications
+              .sort((a, b) => a.time.localeCompare(b.time))
+              .map(med => (
                 <MedicationCard
                   key={med.id}
+                  lang={lang}
                   medication={med}
                   onTake={handleTakeMedication}
                   onDelete={handleDeleteMedication}
-                  onEdit={openEditForm}
+                  onEdit={(m) => { setEditingMedication(m); setShowAddForm(true); }}
                 />
-              ))}
-            </div>
-          </div>
-        )}
+              ))
+          )}
+        </div>
+
+        {/* Essential spacing to prevent cards from being hidden behind the voice controller */}
+        <div className="h-44" />
       </main>
 
-      {/* Overlays */}
-      <VoiceInterface medications={medications} />
+      <VoiceInterface medications={medications} lang={lang} onLangChange={setLang} />
 
       {showAddForm && (
         <AddMedicationForm
+          lang={lang}
           onAdd={handleAddMedication}
           onEdit={handleEditMedication}
-          onCancel={closeForm}
+          onCancel={() => { setShowAddForm(false); setEditingMedication(null); }}
           initialData={editingMedication}
         />
       )}
