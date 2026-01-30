@@ -1,0 +1,7 @@
+{
+  "name": "MedRemind",
+  "description": "An accessible medication tracker for elderly users featuring large buttons, voice check-ins, and clear reminders.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
