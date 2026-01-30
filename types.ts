@@ -6,7 +6,7 @@ export type Language =
 export interface Medication {
   id: string;
   name: string;
-  time: string;
+  times: string[]; // Changed from time: string
   duration: number;
   frequency: number;
   startDate: string;

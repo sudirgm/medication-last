@@ -34,12 +34,14 @@ const MedicationCard: React.FC<MedicationCardProps> = ({ medication, lang, onTak
         <button 
           onClick={(e) => { e.stopPropagation(); onEdit(medication); }}
           className="p-1.5 rounded-lg text-slate-300 hover:text-indigo-500 hover:bg-indigo-50 transition-colors"
+          aria-label="Edit"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
         </button>
         <button 
           onClick={(e) => { e.stopPropagation(); onDelete(medication.id); }}
           className="p-1.5 rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+          aria-label="Delete"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
         </button>
@@ -54,13 +56,21 @@ const MedicationCard: React.FC<MedicationCardProps> = ({ medication, lang, onTak
             <h3 className="text-lg font-black text-slate-900 truncate capitalize">
               {medication.name}
             </h3>
-            <p className="text-xs font-bold text-slate-400">
-              {medication.time} • {medication.frequency}x
-            </p>
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {[...medication.times].sort().map((time, i) => (
+                <span key={i} className="text-[10px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-md">
+                  {time}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
         <div className="flex flex-col gap-2">
+          <div className="flex justify-between items-end mb-0.5">
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Daily Goal</span>
+            <span className="text-[10px] font-black text-indigo-600">{takenTodayCount} / {medication.frequency}</span>
+          </div>
           <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
             <div 
               className={`h-full transition-all duration-700 ${isFullyTakenToday ? 'bg-emerald-500' : 'bg-indigo-500'}`}

@@ -68,8 +68,17 @@ const App: React.FC = () => {
   };
 
   const handleDeleteMedication = (id: string) => {
-    if (window.confirm(t.deleteConfirm)) {
-      setMedications(prev => prev.filter(m => m.id !== id));
+    const confirmationText = t.deleteConfirm || "Remove this medication?";
+    if (window.confirm(confirmationText)) {
+      setMedications(prev => {
+        const filtered = prev.filter(m => m.id !== id);
+        return filtered;
+      });
+      // Ensure we clear the editing state if the deleted item was being edited
+      if (editingMedication?.id === id) {
+        setEditingMedication(null);
+        setShowAddForm(false);
+      }
     }
   };
 
@@ -111,8 +120,8 @@ const App: React.FC = () => {
               <p className="text-sm font-bold text-slate-400">{t.noMeds}</p>
             </div>
           ) : (
-            medications
-              .sort((a, b) => a.time.localeCompare(b.time))
+            [...medications]
+              .sort((a, b) => (a.times[0] || '').localeCompare(b.times[0] || ''))
               .map(med => (
                 <MedicationCard
                   key={med.id}
@@ -126,7 +135,6 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Essential spacing to prevent cards from being hidden behind the voice controller */}
         <div className="h-44" />
       </main>
 
