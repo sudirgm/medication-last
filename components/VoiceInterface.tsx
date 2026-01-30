@@ -11,11 +11,9 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
   const [response, setResponse] = useState<string>('');
   const [transcript, setTranscript] = useState<string>('');
   
-  // Use refs to avoid re-initializing the SpeechRecognition object unnecessarily
   const recognitionRef = useRef<any>(null);
   const medicationsRef = useRef<Medication[]>(medications);
 
-  // Sync ref with props
   useEffect(() => {
     medicationsRef.current = medications;
   }, [medications]);
@@ -38,7 +36,7 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
         setTranscript(current);
         
         if (event.results[0].isFinal) {
-          handleLocalCheck(current.toLowerCase());
+          handleProperAnalysis(current.toLowerCase());
         }
       };
 
@@ -61,54 +59,76 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
     };
   }, []);
 
-  const handleLocalCheck = (text: string) => {
+  const handleProperAnalysis = (text: string) => {
     setState('processing');
     
     const currentMeds = medicationsRef.current;
+    const today = new Date().toDateString();
     
     if (currentMeds.length === 0) {
-      const msg = "You don't have any medications in your list yet.";
+      const msg = "You don't have any medications in your list yet. Please add some first.";
       setResponse(msg);
       speakResponse(msg);
       return;
     }
 
-    // Check if the user is asking about a SPECIFIC medication
-    const foundMed = currentMeds.find(m => text.includes(m.name.toLowerCase()));
-    
-    let statusMsg = "";
+    // Identify if the user is asking about a SPECIFIC medication
+    const specificMed = currentMeds.find(m => text.includes(m.name.toLowerCase()));
 
-    // If a specific medication is found, answer for just that one
-    if (foundMed) {
-      const isTakenToday = foundMed.lastTakenDate 
-        ? new Date(foundMed.lastTakenDate).toDateString() === new Date().toDateString()
-        : false;
+    if (specificMed) {
+      const logsToday = specificMed.logs.filter(log => new Date(log).toDateString() === today);
+      const takenCount = logsToday.length;
+      const freq = specificMed.frequency;
 
-      if (isTakenToday) {
-        const timeTaken = new Date(foundMed.lastTakenDate!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        statusMsg = `Yes, you took your ${foundMed.name} today at ${timeTaken}.`;
+      if (takenCount === 0) {
+        const msg = `No, you haven't taken your ${specificMed.name} today. You need to take it ${freq} ${freq === 1 ? 'time' : 'times'}.`;
+        setResponse(msg);
+        speakResponse(msg);
+      } else if (takenCount < freq) {
+        const msg = `You have taken your ${specificMed.name} ${takenCount} ${takenCount === 1 ? 'time' : 'times'} so far. You still need to take it ${freq - takenCount} more ${freq - takenCount === 1 ? 'time' : 'times'} today.`;
+        setResponse(msg);
+        speakResponse(msg);
       } else {
-        statusMsg = `No, you haven't taken your ${foundMed.name} yet. It is scheduled for ${foundMed.time}.`;
+        const msg = `Yes! You are all done with your ${specificMed.name} for today. You took all ${freq} doses.`;
+        setResponse(msg);
+        speakResponse(msg);
       }
-    } 
-    // Otherwise, handle general queries about MULTIPLE medications
-    else if (text.includes('all') || text.includes('medications') || text.includes('meds') || text.includes('pills') || text.includes('medicine') || text.includes('status')) {
-      const today = new Date().toDateString();
-      const taken = currentMeds.filter(m => m.lastTakenDate && new Date(m.lastTakenDate).toDateString() === today);
-      const remaining = currentMeds.filter(m => !m.lastTakenDate || new Date(m.lastTakenDate).toDateString() !== today);
+      return;
+    }
 
-      if (remaining.length === 0) {
-        statusMsg = `Excellent! You have taken all ${currentMeds.length} of your medications for today.`;
-      } else if (taken.length === 0) {
-        statusMsg = `You haven't taken any of your ${currentMeds.length} medications yet today. Your first one is ${remaining[0].name} at ${remaining[0].time}.`;
+    // Otherwise, perform a COMPLETE analysis of the entire list
+    const completed: string[] = [];
+    const partial: string[] = [];
+    const notStarted: string[] = [];
+
+    currentMeds.forEach(m => {
+      const logsToday = m.logs.filter(log => new Date(log).toDateString() === today);
+      const count = logsToday.length;
+      if (count === 0) {
+        notStarted.push(m.name);
+      } else if (count < m.frequency) {
+        partial.push(`${m.name} (taken ${count} of ${m.frequency})`);
       } else {
-        const remainingNames = remaining.map(m => `${m.name} at ${m.time}`).join(', and ');
-        statusMsg = `You have taken ${taken.length} ${taken.length === 1 ? 'medication' : 'medications'}. You still need to take ${remainingNames}.`;
+        completed.push(m.name);
       }
-    } 
-    // Fallback
-    else {
-      statusMsg = "I'm not sure which medication you mean. You can ask about a specific one by name, or ask for the status of all your meds.";
+    });
+
+    let statusMsg = `You have ${currentMeds.length} ${currentMeds.length === 1 ? 'medication' : 'medications'} in total. `;
+
+    if (completed.length > 0) {
+      statusMsg += `You've finished ${completed.join(' and ')}. `;
+    }
+
+    if (partial.length > 0) {
+      statusMsg += `For your remaining ones: ${partial.join(', and ')}. `;
+    }
+
+    if (notStarted.length > 0) {
+      statusMsg += `You still haven't taken your ${notStarted.join(', or ')} at all today.`;
+    }
+
+    if (completed.length === currentMeds.length) {
+      statusMsg = `Wonderful news! You have taken every single dose of all your medications today. You are 100% complete!`;
     }
 
     setResponse(statusMsg);
@@ -116,7 +136,6 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
   };
 
   const speakResponse = (text: string) => {
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
     
     const utterance = new SpeechSynthesisUtterance(text);
@@ -124,10 +143,9 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
     utterance.onend = () => {
       setState('idle');
       setTranscript('');
-      // Automatically close the dialogue box after speech finishes with a slight delay for smooth transition
       setTimeout(() => {
         setResponse('');
-      }, 1500);
+      }, 5000); // Leave it on screen a bit longer for elderly users to read
     };
     window.speechSynthesis.speak(utterance);
   };
@@ -150,19 +168,17 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
     <div className="fixed bottom-0 left-0 right-0 p-8 flex flex-col items-center z-40 bg-gradient-to-t from-white via-white/95 to-transparent pointer-events-none">
       <div className="w-full max-w-lg pointer-events-auto flex flex-col items-center">
         
-        {/* User's Live Transcript */}
         {state === 'listening' && transcript && (
           <div className="mb-4 text-2xl font-bold text-blue-600 italic bg-blue-50 px-6 py-3 rounded-full animate-pulse shadow-sm">
             "{transcript}..."
           </div>
         )}
 
-        {/* Local Response Bubble */}
         {response && (
-          <div className="mb-6 w-full glass-card bg-white/90 border-4 border-blue-100 p-8 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
-            <div className="flex items-center gap-3 mb-3 text-blue-500 font-black tracking-widest text-sm uppercase">
-              <span className="flex h-3 w-3 rounded-full bg-blue-500"></span>
-              Medication Status
+          <div className="mb-6 w-full glass-card bg-white border-4 border-blue-100 p-8 rounded-[2.5rem] shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center gap-3 mb-4 text-blue-500 font-black tracking-widest text-sm uppercase">
+              <span className="flex h-3 w-3 rounded-full bg-blue-500 animate-pulse"></span>
+              Full Analysis
             </div>
             <p className="text-3xl font-black text-slate-800 leading-tight">
               {response}
@@ -171,7 +187,6 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
         )}
         
         <div className="relative flex items-center justify-center">
-          {/* Animated Rings for Listening */}
           {state === 'listening' && (
             <>
               <div className="pulse-ring w-32 h-32" style={{ animationDelay: '0s' }}></div>
@@ -194,8 +209,8 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
               <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
-            ) : state === 'processing' ? (
-              <svg className="w-16 h-16 text-slate-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            ) : state === 'processing' || state === 'speaking' ? (
+              <svg className="w-16 h-16 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -209,9 +224,9 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications }) => {
 
         <p className="mt-6 text-2xl font-black text-slate-800 tracking-tight text-center drop-shadow-sm">
           {state === 'listening' ? 'Listening...' : 
-           state === 'processing' ? 'Checking...' : 
-           state === 'speaking' ? 'Talking...' : 
-           'Ask "Did I take my meds?"'}
+           state === 'processing' ? 'Thinking...' : 
+           state === 'speaking' ? 'Speaking...' : 
+           'Ask "How am I doing today?"'}
         </p>
       </div>
     </div>

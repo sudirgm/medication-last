@@ -27,6 +27,32 @@ const MedicationCard: React.FC<MedicationCardProps> = ({ medication, onTake, onD
   const currentDay = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   const courseProgressPercent = Math.min((currentDay / medication.duration) * 100, 100);
 
+  // Next Dose Calculation
+  const getNextDoseInfo = () => {
+    if (isFullyTakenToday) {
+      return { time: medication.time, label: 'Tomorrow' };
+    }
+
+    const [hours, minutes] = medication.time.split(':').map(Number);
+    const firstDoseToday = new Date();
+    firstDoseToday.setHours(hours, minutes, 0, 0);
+
+    // If multiple doses, assume a 4-hour gap between them
+    const nextDoseDate = new Date(firstDoseToday);
+    nextDoseDate.setHours(firstDoseToday.getHours() + (takenTodayCount * 4));
+
+    const nextTimeStr = nextDoseDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Check if overdue
+    if (nextDoseDate < new Date()) {
+      return { time: nextTimeStr, label: 'As soon as possible', isOverdue: true };
+    }
+
+    return { time: nextTimeStr, label: 'Today' };
+  };
+
+  const nextDose = getNextDoseInfo();
+
   const getIcon = (name: string) => {
     const n = name.toLowerCase();
     if (n.includes('drop')) return '💧';
@@ -92,10 +118,22 @@ const MedicationCard: React.FC<MedicationCardProps> = ({ medication, onTake, onD
               {medication.name}
             </h3>
             <div className="flex flex-col gap-1">
-              <p className={`text-lg font-bold ${isFullyTakenToday ? 'text-green-600' : 'text-blue-500'}`}>
-                Taken {takenTodayCount} of {medication.frequency} times today
-              </p>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <p className={`text-lg font-bold ${isFullyTakenToday ? 'text-green-600' : 'text-blue-500'}`}>
+                  Taken {takenTodayCount} of {medication.frequency} today
+                </p>
+                {!isFullyTakenToday && (
+                  <span className={`text-sm font-black px-3 py-1 rounded-full ${nextDose.isOverdue ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-blue-50 text-blue-400'}`}>
+                    Next: {nextDose.time} {nextDose.label === 'Today' ? '' : `(${nextDose.label})`}
+                  </span>
+                )}
+                {isFullyTakenToday && (
+                  <span className="text-sm font-black px-3 py-1 rounded-full bg-green-100 text-green-600">
+                    Next: {nextDose.time} (Tomorrow)
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
                   Course: Day {Math.min(currentDay, medication.duration)} of {medication.duration}
                 </span>
@@ -133,7 +171,7 @@ const MedicationCard: React.FC<MedicationCardProps> = ({ medication, onTake, onD
             </div>
             {takenTodayCount > 0 && (
               <span className="text-sm font-bold opacity-70">
-                Next dose due later today
+                Tap to record dose {takenTodayCount + 1}
               </span>
             )}
           </button>
