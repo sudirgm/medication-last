@@ -55,19 +55,39 @@ const VoiceInterface: React.FC<VoiceInterfaceProps> = ({ medications, lang, onLa
 
     let msg = "";
     if (foundMed) {
+      // If a specific medicine is mentioned, give its detailed status
       const logsToday = foundMed.logs.filter(l => new Date(l).toDateString() === today);
-      if (logsToday.length > 0) {
-        const lastLog = new Date(logsToday[logsToday.length - 1]);
-        const timeStr = lastLog.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        msg = t.voiceYes(foundMed.name, timeStr);
+      const takenCount = logsToday.length;
+      
+      // We can use the new voiceDetail for specifics
+      if (t.voiceDetail) {
+        msg = t.voiceDetail(foundMed.name, foundMed.frequency, takenCount);
       } else {
-        msg = t.voiceNo(foundMed.name);
+        // Fallback to simpler status if Detail is missing
+        if (takenCount > 0) {
+          const lastLog = new Date(logsToday[logsToday.length - 1]);
+          const timeStr = lastLog.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          msg = t.voiceYes(foundMed.name, timeStr);
+        } else {
+          msg = t.voiceNo(foundMed.name);
+        }
       }
     } else {
-      // General summary
+      // General summary of ALL medications as requested
+      const summaryParts = currentMeds.map(m => {
+        const takenCount = m.logs.filter(l => new Date(l).toDateString() === today).length;
+        if (t.voiceDetail) {
+          return t.voiceDetail(m.name, m.frequency, takenCount);
+        }
+        return `${m.name}: ${takenCount}/${m.frequency}`;
+      });
+      
+      msg = summaryParts.join(' ');
+      
+      // Also add the general summary at the end
       const totalToTake = currentMeds.reduce((acc, m) => acc + m.frequency, 0);
       const totalTaken = currentMeds.reduce((acc, m) => acc + m.logs.filter(l => new Date(l).toDateString() === today).length, 0);
-      msg = t.voiceSummary(totalTaken, totalToTake);
+      msg += ` ${t.voiceSummary(totalTaken, totalToTake)}`;
     }
     
     setResponse(msg);

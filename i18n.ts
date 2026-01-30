@@ -23,7 +23,9 @@ export const translations: Record<Language, any> = {
     prompt: 'Tap to check progress',
     voiceYes: (name: string, time: string) => `Yes, you took your ${name} at ${time}.`,
     voiceNo: (name: string) => `No, you haven't taken ${name} yet today.`,
-    voiceSummary: (taken: number, total: number) => `You've taken ${taken} of ${total} doses today.`
+    voiceSummary: (taken: number, total: number) => `You've taken ${taken} of ${total} doses today.`,
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} should be taken ${freq} ${freq === 1 ? 'time' : 'times'} a day. You have taken it ${taken} ${taken === 1 ? 'time' : 'times'} so far.`
   },
   'ta-IN': {
     name: 'தமிழ்',
@@ -46,7 +48,9 @@ export const translations: Record<Language, any> = {
     prompt: 'பேசத் தொடங்குங்கள்',
     voiceYes: (name: string, time: string) => `ஆம், நீங்கள் ${name} மருந்தை ${time} மணிக்கு எடுத்துக்கொண்டீர்கள்.`,
     voiceNo: (name: string) => `இல்லை, நீங்கள் இன்று இன்னும் ${name} மருந்து எடுக்கவில்லை.`,
-    voiceSummary: (taken: number, total: number) => `இன்று நீங்கள் ${total} மருந்துகளில் ${taken} மருந்துகளை எடுத்துள்ளீர்கள்.`
+    voiceSummary: (taken: number, total: number) => `இன்று நீங்கள் ${total} மருந்துகளில் ${taken} மருந்துகளை எடுத்துள்ளீர்கள்.`,
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} மருந்தை ஒரு நாளைக்கு ${freq} முறை எடுக்க வேண்டும். நீங்கள் இதுவரை ${taken} முறை எடுத்துள்ளீர்கள்.`
   },
   'hi-IN': {
     name: 'हिन्दी',
@@ -69,7 +73,9 @@ export const translations: Record<Language, any> = {
     prompt: 'पूछने के लिए दबाएं',
     voiceYes: (name: string, time: string) => `हाँ, आपने ${time} बजे ${name} ले ली थी।`,
     voiceNo: (name: string) => `नहीं, आपने आज अभी तक ${name} नहीं ली है।`,
-    voiceSummary: (taken: number, total: number) => `आपने आज ${total} में से ${taken} खुराक ले ली है।`
+    voiceSummary: (taken: number, total: number) => `आपने आज ${total} में से ${taken} खुराक ले ली है।`,
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} को दिन में ${freq} बार लेना चाहिए। आपने अब तक इसे ${taken} बार लिया है।`
   },
   'te-IN': {
     name: 'తెలుగు',
@@ -80,7 +86,9 @@ export const translations: Record<Language, any> = {
     markTaken: 'మందు తీసుకోండి',
     doneToday: 'ఈ రోజుకు పూర్తయింది',
     listening: 'వింటున్నాను...',
-    prompt: 'ప్రశ్నించడానికి నొక్కండి'
+    prompt: 'ప్రశ్నించడానికి నొక్కండి',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} రోజుకు ${freq} సార్లు తీసుకోవాలి. మీరు ఇప్పటివరకు ${taken} సార్లు తీసుకున్నారు.`
   },
   'bn-IN': {
     name: 'বাংলা',
@@ -91,7 +99,9 @@ export const translations: Record<Language, any> = {
     markTaken: 'ওষুধ নিন',
     doneToday: 'আজকের মতো শেষ',
     listening: 'শুনছি...',
-    prompt: 'প্রশ্ন করতে চাপুন'
+    prompt: 'প্রশ্ন করতে চাপুন',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} দিনে ${freq} বার নেওয়া উচিত। আপনি এ পর্যন্ত ${taken} বার নিয়েছেন।`
   },
   'ml-IN': {
     name: 'മലയാളം',
@@ -102,7 +112,9 @@ export const translations: Record<Language, any> = {
     markTaken: 'മരുന്ന് കഴിക്കുക',
     doneToday: 'ഇന്നത്തേക്ക് കഴിഞ്ഞു',
     listening: 'കേൾക്കുന്നു...',
-    prompt: 'ചോദിക്കാൻ അമർത്തുക'
+    prompt: 'ചോദിക്കാൻ അമർത്തുക',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} በቀን ${freq} തവണ എടുക്കണം. നിങ്ങൾ ഇതുവരെ ${taken} തവണ എടുത്തു.`
   },
   'kn-IN': {
     name: 'ಕನ್ನಡ',
@@ -111,16 +123,20 @@ export const translations: Record<Language, any> = {
     newMedicine: 'ಹೊಸ ಔಷಧಿ',
     markTaken: 'ಔಷಧಿ ತೆಗೆದುಕೊಳ್ಳಿ',
     listening: 'ಕೇಳಿಸಿಕೊಳ್ಳುತ್ತಿದ್ದೇನೆ...',
-    prompt: 'ಕೇಳಲು ಒತ್ತಿರಿ'
+    prompt: 'ಕೇಳಲು ಒತ್ತಿರಿ',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} ದಿನಕ್ಕೆ ${freq} ಬಾರಿ ತೆಗೆದುಕೊಳ್ಳಬೇಕು. ನೀವು ಇಲ್ಲಿಯವರೆಗೆ ${taken} ಬಾರಿ ತೆಗೆದುಕೊಂಡಿದ್ದೀರಿ.`
   },
   'mr-IN': {
     name: 'मराठी',
-    progress: 'प्रगತಿ',
+    progress: 'प्रगति',
     schedule: 'वेळापत्रक',
     newMedicine: 'नवीन औषध',
     markTaken: 'औषध घ्या',
     listening: 'ऐकत आहे...',
-    prompt: 'विचारण्यासाठी दाबा'
+    prompt: 'विचारण्यासाठी दाबा',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} दिवसातून ${freq} वेळा घ्यावे लागते. आपण आतापर्यंत ${taken} वेळा घेतले आहे.`
   },
   'es-ES': {
     name: 'Español',
@@ -131,7 +147,9 @@ export const translations: Record<Language, any> = {
     markTaken: 'Tomar Medicina',
     doneToday: 'Listo por hoy',
     listening: 'Escuchando...',
-    prompt: 'Pulsa para preguntar'
+    prompt: 'Pulsa para preguntar',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} debe tomarse ${freq} veces al día. La ha tomado ${taken} veces hasta ahora.`
   },
   'fr-FR': {
     name: 'Français',
@@ -140,7 +158,9 @@ export const translations: Record<Language, any> = {
     newMedicine: 'Nouveau Médicament',
     markTaken: 'Prendre',
     listening: 'Écoute...',
-    prompt: 'Appuyez pour demander'
+    prompt: 'Appuyez pour demander',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} doit être pris ${freq} fois par jour. Vous l'avez pris ${taken} fois jusqu'à présent.`
   },
   'de-DE': {
     name: 'Deutsch',
@@ -149,7 +169,9 @@ export const translations: Record<Language, any> = {
     newMedicine: 'Neue Medizin',
     markTaken: 'Einnehmen',
     listening: 'Zuhören...',
-    prompt: 'Fragen'
+    prompt: 'Fragen',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} sollte ${freq} Mal täglich eingenommen werden. Sie haben es bisher ${taken} Mal eingenommen.`
   },
   'zh-CN': {
     name: '中文',
@@ -158,7 +180,9 @@ export const translations: Record<Language, any> = {
     newMedicine: '新药物',
     markTaken: '服用',
     listening: '正在听...',
-    prompt: '点击提问'
+    prompt: '点击提问',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} 每天应服用 ${freq} 次。您目前已服用 ${taken} 次。`
   },
   'ja-JP': {
     name: '日本語',
@@ -167,6 +191,8 @@ export const translations: Record<Language, any> = {
     newMedicine: '新しい薬',
     markTaken: '服用する',
     listening: '聞いています...',
-    prompt: 'タップして質問'
+    prompt: 'タップして質問',
+    voiceDetail: (name: string, freq: number, taken: number) => 
+      `${name} は 1 日に ${freq} 回服用する必要があります。これまでに ${taken} 回服用しました。`
   }
 };
